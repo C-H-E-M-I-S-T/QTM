@@ -2,7 +2,7 @@ import math
 from random import randint
 
 
-class ThermodynamicalSystem:
+class Thermodynamics:
     def __init__(self, P, T, Cv, Cp, V, m):
 #Постоянные
 #постоянная больцмана

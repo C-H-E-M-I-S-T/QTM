@@ -57,13 +57,6 @@ class Thermodynamics:
         return float(U+P*V)
     def dH(self,dU,P1,P2,V1,V2)->float:
         return float(dU+(P2-P1)*V2+(V2-V1)*P2)
-
-#определение 
-    def F(self,U,T,S)->float:
-        return float(U-T*S)
-    def dF(dU, T2, T1, S2, S1):
-        return float(dU-(T2-T1)*S2-(S2-S1)*T2)
-
 #определение изобарно-изотермического потенциала или
 #функции Гиббса
     def G(self,U,T,S,P,V)->float:
@@ -73,6 +66,13 @@ class Thermodynamics:
                  (P2-P1)*V2+(V2-V1)*P2)
     def dG_isobaric_isotermic(self,dH, T, dS):
         return float(dH-T*dS)
+#определение 
+    def F(self,U,T,S)->float:
+        return float(U-T*S)
+    def dF(dU, T2, T1, S2, S1):
+        return float(dU-(T2-T1)*S2-(S2-S1)*T2)
+
+
     
 #классическое определение энтропии как приведенной теплоты
     S = float(0)

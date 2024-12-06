@@ -32,28 +32,53 @@ class Electrostatics(Thermodynamics):
         if (FORCE==True):
             return (9*10e9*(1.602176634e-19)**2/(dist**2*diel))
         else: return((-1)*(1.602176634e-19)**2/(diel*dist*4*math.pi*e_z))
+        
+    def Coulomb_interaction_repulsion_work(self,dist=float):
+        power = float(0)
+        #УЧТЕНА ДИЭЛЕКТРИЧЕСКАЯ ПРОНИЦАЕМОСТЬ ДИСТИЛЛИРОВАННОЙ ВОДЫ
+        diel=80.2
+        e_z=8.85*10e-12
+        max_distance = 1.4142135623730953e-09 #вычисленная длинна вектора между точками 
+        #[0,0,0] [1,1,0] в кубе объёмом 10e-30
+        #Формула взята не из физ химии Герасимова, но из источника по электростатике
+        return (1/(4*math.pi*diel))*(((1.602176634e-19)**2/dist)-((1.602176634e-19)**2/(max_distance)))
     
     #Чтобы соответствовать этим понятиям, недостаточно лишь электростатических расчетов, 
     #но образование кристаллической решетки ионного строения
     def energy_release_from_ions_bonding(mole=float):
         #Термохимически рассчитанная величина энергии спаривания Li+ и F-
-        return [-259.714*mole, -584.1*mole,35.9*mole]
+        return [-612.1*mole, -584.1*mole,35.9*mole]
     def part_energy_release_from_ions_bonding(self):
         #Термохимически рассчитанная величина энергии спаривания 
         #буквально двух частиц, Li+ и F-
-        return [-259.714*(1/(self.Na)), -584.1*(1/(self.Na)),35.9*(1/(self.Na))]
+        return [-612.1*(1/(self.Na_)), -584.1*(1/(self.Na_)),35.9*(1/(self.Na_))]
     
     def modulate_ionic_bonding(self,volume=float, particles_radius=float):
         #согласно расчетам протяженность вдоль координатных осей около 1,1;
         #принимаю равной 1.
         Li = [randint(0,1) for i in range(3)]
         F = [randint(0,1) for i in range(3)]
-        distance = self.above_than((((((Li[0]-F[0])**2+(Li[1]-F[1]))**2+(Li[2]-F[2])**2)**0.5)*10e-10),2*93.75e-12)
+        distance = self.above_than((((((Li[0]-F[0])**2+(Li[1]-F[1]))**2+(Li[2]-F[2])**2)**0.5)*10e-10),2*9.375e-11)
         diffusion_force = (8.9*10e-4)*10**-9
         if self.Niu_coulomb_interaction_Li_F(distance, True)>diffusion_force:
-            _dQ=self.Niu_coulomb_interaction_Li_F(distance, False)
-            _dS=_dQ/self.T
-            return [self.dH(_dQ, self.P, self.P, self.V, self.V), self.dG_isobaric_isotermic(_dQ,self.T,_dS), _dS]
+            #_dQ=self.Niu_coulomb_interaction_Li_F(distance, False)
+            #_dS=_dQ/self.T
+            #return [self.dH(_dQ, self.P, self.P, self.V, self.V), self.dG_isobaric_isotermic(_dQ,self.T,_dS), _dS]
+            pars = self.part_energy_release_from_ions_bonding()     
+            return [pars[0],pars[1],pars[2]]        
+        else: return[0.0,0.0,0.0]
+    def modulate_ionic_bonding_(self, arg=(0.0,0.0)):
+        #согласно расчетам протяженность вдоль координатных осей около 1,1;
+        #принимаю равной 1.
+        volume=10e-30
+        particles_radius=9.375e-11
+        Li,F=arg
+        distance = self.above_than((((((Li[0]-F[0])**2+(Li[1]-F[1]))**2+(Li[2]-F[2])**2)**0.5)*10e-10),2*9.375e-11)
+        diffusion_force = (8.9*10e-4)*10**-9
+        if self.Niu_coulomb_interaction_Li_F(distance, True)>diffusion_force:
+            pars = self.part_energy_release_from_ions_bonding()     
+            return pars
+      
         else: return[0.0,0.0,0.0]
     def modulate_dissociaition(self,calculation=False):
             return [259.714*(1/self.Na), 584.1*(1/self.Na),-35.9*(1/self.Na)]
@@ -69,9 +94,24 @@ class Electrostatics(Thermodynamics):
             #При постоянстве давления и объёма макроскопическая 
             # работа по расширению системы равна нулю, след-но 
             # изменение св.вн.эн. равно изменению теплоты
-            return [self.dH(_dQ, self.P, self.P, self.V, self.V), self.dG(_dQ, self.T,self.T,_dS+self.S,self.S,self.P,self.P,self.V,self.V), _dS]
+            return [_dQ, _dQ, 0]#_dS]
         
         else: return [0.0,0.0,0.0]
+    def modulate_equal_charges_repulsion_(self, arg=(float,float)):
+        #согласно расчетам протяженность вдоль координатных осей около 1,1;
+        #принимаю равной 1.
+        volume=10e-30
+        particles_radius=9.375e-11
+        Li,F=arg
+        distance = self.above_than((((((Li[0]-F[0])**2+(Li[1]-F[1]))**2+(Li[2]-F[2])**2)**0.5)*10e-10),2*93.75e-12)
+        if self.Niu_coulomb_interaction_Li_F(distance,True) > self.Niu_Diffusion:
+            _dQ=float(abs(self.Niu_coulomb_interaction_Li_F(distance, False)))            
+            _dS=_dQ/self.T
+            _dA=float(self.Coulomb_interaction_repulsion_work(distance))
+            return [_dA, _dA, 0]
+        
+        else: return [0.0,0.0,0.0]
+
 
    
     
@@ -90,7 +130,7 @@ class Electrostatics(Thermodynamics):
         #Формула взята не из физ химии Герасимова, но из источника по электростатике
         if (FORCE==True):
             return (1/(4*math.pi*8.85418782e-12))*((1.602176634e-19)*LiF_bond_dipol)/(diel*(dist**3))*((3*cos_alpha)+1)**0.5
-        else: return(1/(4*math.pi*8.85418782e-12))*((1.602176634e-19)*LiF_bond_dipol)/(diel*(dist**2))*cos_alpha
+        else: return (-1)*(1/(4*math.pi*8.85418782e-12))*((1.602176634e-19)*LiF_bond_dipol)/(diel*(dist**2))*cos_alpha
     def modulate_ions_to_molecule_adsorbtion(self):
         Li_or_F = [randint(0,1) for i in range(3)]
         LiF_center = [randint(0,1) for i in range(3)]
@@ -100,6 +140,22 @@ class Electrostatics(Thermodynamics):
         print(f"сила диффузии {self.Niu_Diffusion}")
         print(f"кулоновская сила притяжения иона к молекуле {self.Niu_coulomb_interaction_LiF_ion(distance, LiF_center, Li_or_F, True)}")
         if self.Niu_coulomb_interaction_LiF_ion(distance, LiF_center, Li_or_F, True)>self.Niu_Diffusion:
+            _dQ=self.Niu_coulomb_interaction_LiF_ion(distance, LiF_center, Li_or_F, False)
+            _dS=_dQ/self.T
+            #При постоянстве давления и объёма макроскопическая 
+            # работа по расширению системы равна нулю, след-но 
+            # изменение св.вн.эн. равно изменению теплоты
+            return [self.dH(_dQ, self.P, self.P, self.V, self.V), self.dG_isobaric_isotermic(_dQ,self.T,_dS), _dS]
+        else: return [0.0,0.0,0.0]
+    def modulate_ions_to_molecule_adsorbtion_(self,args):
+        Li_or_F,LiF_center = args
+        distance = self.above_than((((((LiF_center[0]-Li_or_F[0])**2+(LiF_center[1]-Li_or_F[1]))**2+(LiF_center[2]-Li_or_F[2])**2)**0.5)*10e-10),93.75e-12)
+        print(f"LiF coordinates {LiF_center} ion coordinates {Li_or_F}")
+        print(f"Расстояние между молекулой и ионом {distance} метра")
+        print(f"сила диффузии {self.Niu_Diffusion}")
+        print(f"кулоновская сила притяжения иона к молекуле {self.Niu_coulomb_interaction_LiF_ion(distance, LiF_center, Li_or_F, True)}")
+        if self.Niu_coulomb_interaction_LiF_ion(distance, LiF_center, Li_or_F, True)>self.Niu_Diffusion:
+            print(f"энергия притяжения иона к молекуле {self.Niu_coulomb_interaction_LiF_ion(distance, LiF_center, Li_or_F, False)}")
             _dQ=self.Niu_coulomb_interaction_LiF_ion(distance, LiF_center, Li_or_F, False)
             _dS=_dQ/self.T
             #При постоянстве давления и объёма макроскопическая 

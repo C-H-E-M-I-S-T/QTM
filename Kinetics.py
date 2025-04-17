@@ -70,7 +70,8 @@ class Kinetics(Electrostatics):
     D=D_0
     av_speed = 0.01 #средняя скорость до начала образования осадк
     
-    K = 0.6667 #данные эксперимента, константа скорости
+    #K = 0.6667 #данные эксперимента, константа скорости
+    K = 0.5000
     def reaction_speed(self, k,C_A, C_B, n_A, n_B):
         #n_A частный порядки реакции по фтору
         #n_B частный порядок реакции по литию
@@ -83,7 +84,7 @@ class Kinetics(Electrostatics):
             # получаю убыль частиц каждого из реагентов
             # так как каждое взаимодействие включает две частицы реагентов, 
             # число взаимодействий принимаю за половину взаимодействующих частиц
-        interactions_amount=3*particles_created #пусть на каждое образование 
+        interactions_amount=(1/3)*particles_created #пусть на каждое образование 
         #пар столкновения приходится отталкивание одноименных зарядов
             
             #Буду исходить из предположения, что все взаимодействия равновероятны
@@ -113,7 +114,7 @@ class Kinetics(Electrostatics):
         inter_Li_F = KineticsInterpreter()
         inter_LiF = KineticsInterpreter()      
         quantum_int=[0.0]
-        macroscopic_effects_Li_F_positive=[(self.part_energy_release_from_ions_bonding(),[0.0])]
+        macroscopic_effects_Li_F_positive=[([0.0,0.0,0.0],[0.0])]
         macroscopic_effects_Li_F_negative=[([0.0,0.0,0.0],[0.0])]
         macroscopic_effects_LiF=[([0.0,0.0,0.0],[0.0])]
         CnREG=[0.5]
@@ -138,7 +139,7 @@ class Kinetics(Electrostatics):
                                     #macroscopic_effects_Li_F_negative.append((eff, quantum_int))
                                 macroscopic_effects_Li_F_negative.append((self.ds_ions_interaction(True, ([p_Li_X,p_Li_Y,p_Li_Z],[p_F_X,p_F_Y,p_F_Z])), quantum_int))
                                 macroscopic_effects_Li_F_negative.append((self.ds_ions_interaction(True, ([p_Li_X,p_Li_Y,p_Li_Z],[p_F_X,p_F_Y,p_F_Z])), quantum_int))
-                                macroscopic_effects_LiF.append((self.modulate_ions_to_molecule_adsorbtion_(([p_Li_X,p_Li_Y,p_Li_Z],[p_F_X,p_F_Y,p_F_Z])), quantum_int))
+                                #macroscopic_effects_LiF.append((self.modulate_ions_to_molecule_adsorbtion_(([p_Li_X,p_Li_Y,p_Li_Z],[p_F_X,p_F_Y,p_F_Z])), quantum_int))
         inter_Li_F.interactions.append(CalculatedInteraction(macroscopic_effects_Li_F_positive))
         inter_Li_F.interactions.append(CalculatedInteraction(macroscopic_effects_Li_F_negative))
         #inter_Li_F.interactions.append(CalculatedInteraction(macroscopic_effects_LiF))
@@ -187,15 +188,18 @@ class Kinetics(Electrostatics):
             CnREG.append(C_li)
             print(f"Концентрации: {C_LiF}(+{dc})")
             
-            #Прирост среднего радиуса коллоидных частиц в секунду
-            dr_dt=2.4619e-8*(C_LiF-0.052)
+            #dr_dt=4.461e-7*(C_LiF)
+            #dr_dt=1.632e-6*(C_LiF)
+            #dr_dt=8.67e-4*(C_LiF)
+            #Прирост среднего радиуса коллоидных частиц в секунду            
+            dr_dt=4.106e-6*(C_LiF)
             self.r_LiF_Col+=dr_dt
             
             #dc_coagulation=2.1587*C_LiF**2
             dc_coagulation=0
             
             
-            if (C_LiF>0.052):
+            if (C_LiF>0.043):
                 #Преодоление концентрации насыщенного раствора и начало образования 
                 #коллоидных частиц            
                 
@@ -209,16 +213,42 @@ class Kinetics(Electrostatics):
                 self.D=(2*8.314*self.T)/(3*math.pi*nu_*self.r_LiF_Col)
                 #dc_coagulation=(5.16*(0.1*C_LiF)*2.64*25.94)/(72.8*(10**-3)*3*self.r_LiF_Col*0.1)
                 
-                #Убыль концентрации фторида лития в связи с пересыщением раствора
-                dc_coagulation=(23.603*(0.1*C_LiF)*2.64*self.r_LiF_Col)/((3*72.86*10e-3*25.94)*0.1*10e-6)
+                #dc_coagulation=(23.603*(0.1*C_LiF)*2.64*self.r_LiF_Col)/((3*72.86*10e-3*25.94)*0.1*10e-6)
+                
+                #Убыль концентрации фторида лития в связи с пересыщением раствора                
+                #dc_coagulation=(21.603*(0.1*C_LiF)*2.64*self.r_LiF_Col)/((3*72.86*10e-3*25.94)*10e-6)
+                #dc_coagulation=(C_LiF+dc-0)
+                dc_coagulation=0.25*(C_LiF-0.043)
                 C_LiF-=dc_coagulation
                 C_col_+=dc_coagulation
                 
+                #Моделирование перерастворения коллоидных частиц фторида лития
+                dc_LiF_resol=(4.6*10**-4)*C_col_
+                if C_col_>dc_LiF_resol:
+                    C_col_-=dc_LiF_resol
+                    C_f+=dc_LiF_resol
+                    C_li+=dc_LiF_resol
+                    #C_LiF+=dc_LiF_resol
+                    #Происходит растворение коллоидных частиц, энтропия должна
+                    #увеличиться в соответствии с фазовым превращением, плавлением фторида лития
+                    d_parmateres[0]+=25.95816*dc_LiF_resol*0.1
+                    d_parmateres[2]+=25.95816*(dc_LiF_resol)*0.1/self.T
+                    d_parmateres[1]+=self.dG_isobaric_isotermic(25.95816*(dc_LiF_resol)*0.1, self.T,25.95816*(dc_coagulation)*0.1/self.T)
                 if (dc>0 and C_LiF>C_saved):
+                    #Примем, что dG=dH тут потому, что dS при самом пересыщении не изменяется
+                    #Иначе нужно найти способ выразить отдельно dS от самого пересыщения раствора
+                    d_parmateres[0]+=21.603*(dc)*0.1
                     d_parmateres[1]+=21.603*(dc)*0.1
                     #d_parmateres[2]+=25.95816*(dc)*0.1/self.T
                     C_saved=C_LiF
-                d_parmateres[2]-=25.95816*(dc_coagulation)*0.1/self.T
+                #Выделение теплоты и изменение энтропии вследствие кристаллизации
+                #Расчет исходя из теплот плавления и растворения фторида лития
+                d_parmateres[0]+=-25.95816*(dc_coagulation)*0.1
+                d_parmateres[2]+=-25.95816*(dc_coagulation)*0.1/self.T
+                d_parmateres[1]+=self.dG_isobaric_isotermic(-25.95816*(dc_coagulation)*0.1, self.T,-25.95816*(dc_coagulation)*0.1/self.T)
+                
+                
+                
                 #self.r_LiF_Col+=self.dr_dc*(dc)
                 #C_col_+=dc_coagulation
                 C_col.append(C_col_)                                
@@ -264,7 +294,7 @@ class Kinetics(Electrostatics):
 
         for ax in axs.flat:
             ax.set(xlabel='время', ylabel='величина')
-        print (f"Результат {d_parmateres}")
+        print (f"Результат dH = {round(d_parmateres[0],3)} Кдж/моль dS = {round(d_parmateres[2],3)} dG = {round(d_parmateres[1],3)} Кдж/моль")
         plt.show()
         #plt.ylabel("Скорость, моль/л*с")
         #plt.title("Скорость образования пар столкновения LiF")
@@ -291,4 +321,4 @@ class Kinetics(Electrostatics):
         return d_parmateres
     
 test_system = Kinetics(101325, 298.15, 1,10e-6,0.1,100)
-print (f"Результат {test_system.run(90)}")
+print (f"Результат {test_system.run(80)}")

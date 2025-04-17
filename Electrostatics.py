@@ -25,9 +25,6 @@ class Electrostatics(Thermodynamics):
         diel=80.2
         e_z=8.85*10e-12
         #Формула взята не из физ химии Герасимова, но из источника по электростатике
-        print(f"{-259.714} - кдж/моль по справочным данным")
-        print(f"{((-1)*(1.602176634e-19)**2/(diel*dist))*(self.Na_)} - кдж/моль расчет без K")
-        print(f"{((-1)*(1.602176634e-19)**2/(diel*dist*4*math.pi*e_z))*(self.Na_)} - кдж/моль расчет с K")
         print(f"сила составила {9*10e9*(1.602176634e-19)**2/((dist**2)*diel)}")
         if (FORCE==True):
             return (9*10e9*(1.602176634e-19)**2/(dist**2*diel))
@@ -48,11 +45,7 @@ class Electrostatics(Thermodynamics):
     def energy_release_from_ions_bonding(mole=float):
         #Термохимически рассчитанная величина энергии спаривания Li+ и F-
         return [-612.1*mole, -584.1*mole,35.9*mole]
-    def part_energy_release_from_ions_bonding(self):
-        #Термохимически рассчитанная величина энергии спаривания 
-        #буквально двух частиц, Li+ и F-
-        return [-612.1*(1/(self.Na_)), -584.1*(1/(self.Na_)),35.9*(1/(self.Na_))]
-    
+     
     def modulate_ionic_bonding(self,volume=float, particles_radius=float):
         #согласно расчетам протяженность вдоль координатных осей около 1,1;
         #принимаю равной 1.
@@ -67,6 +60,11 @@ class Electrostatics(Thermodynamics):
             pars = self.part_energy_release_from_ions_bonding()     
             return [pars[0],pars[1],pars[2]]        
         else: return[0.0,0.0,0.0]
+    def part_energy_release_from_ions_bonding(self):
+        #Термохимически рассчитанная величина энергии спаривания 
+        #буквально двух частиц, Li+ и F-
+        #return [-612.1*(1/(self.Na_)), -584.1*(1/(self.Na_)),35.9*(1/(self.Na_))]
+        return [(-7.95e-22), -584.1*(1/(self.Na_)),35.9*(1/(self.Na_))]   
     def modulate_ionic_bonding_(self, arg=(0.0,0.0)):
         #согласно расчетам протяженность вдоль координатных осей около 1,1;
         #принимаю равной 1.
